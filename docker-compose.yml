@@ -1,0 +1,17 @@
+version: '3.8'
+
+services:
+  yolo-fastapi:
+    image: yolo-fastapi:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./data:/app/data
+    environment:
+      - MODEL_WEIGHTS=/app/yolo11x-seg.pt  # Specify path to the YOLO weights file
+      #- MODEL_WEIGHTS=/app/best.pt  # Specify path to the YOLO weights file
+    runtime: nvidia  # Para especificar o uso do runtime NVIDIA
+    restart: unless-stopped

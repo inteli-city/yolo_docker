@@ -1,0 +1,4 @@
+yolo_env
+.mypy_cache
+data
+*.pt
