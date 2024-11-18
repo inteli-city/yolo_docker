@@ -1,20 +1,53 @@
 import os
 import cv2
+import pytz
 import torch
 import uvicorn
-import colorsys
+import logging
 import traceback
 import numpy as np
 from ultralytics import YOLO
+from datetime import datetime
+from logging.handlers import RotatingFileHandler
+import warnings
 
 from fastapi import FastAPI, UploadFile, File, Query
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
+# Define o timezone (exemplo com "America/Sao_Paulo")
+TIMEZONE = pytz.timezone("America/Sao_Paulo")
+
+# Função para adicionar o timezone local ao log
+class TimezoneFormatter(logging.Formatter):
+    def formatTime(self, record, datefmt=None):
+        # Converte o tempo de UTC para o timezone especificado
+        dt = datetime.fromtimestamp(record.created, TIMEZONE)
+        if datefmt:
+            return dt.strftime(datefmt)
+        else:
+            return dt.strftime("%d:%m:%Y %H:%M:%S,%f")[:-3]  # Remover os últimos 3 dígitos dos microssegundos para milissegundos
+
+# Configuração do logger para adicionar logs a um arquivo .log
+log_formatter = TimezoneFormatter('%(asctime)s - %(levelname)s - %(message)s')
+log_file = "data/app.log"
+
+file_handler = RotatingFileHandler(log_file, maxBytes=5*1024*1024, backupCount=2)
+file_handler.setLevel(logging.INFO)
+file_handler.setFormatter(log_formatter)
+
+logger = logging.getLogger()
+logger.setLevel(logging.INFO)
+logger.addHandler(file_handler)
+
+# Capturar warnings
+logging.captureWarnings(True)
+warnings_logger = logging.getLogger("py.warnings")
+warnings_logger.addHandler(file_handler)
+
 app = FastAPI(title="YOLO Inference API", description="An API for running YOLO inference in streaming mode, compatible with models from yolov8.", version="1.0")
 
 # Summon a Yolo model
-#model = YOLO("/data/best.pt")
 model = YOLO(os.environ.get('MODEL_WEIGHTS'))
 model.fuse()
 classes_name = model.names  # Dictionary of class names
@@ -56,6 +89,7 @@ async def detect_objects(
 ):
     try:
         # Read image file
+        logger.info("Received image for detection")
         contents = await image.read()
         np_arr = np.frombuffer(contents, np.uint8)
         frame = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
@@ -65,11 +99,13 @@ async def detect_objects(
         classes_list = [int(c) for c in classes.split(',')] if classes else None
 
         # Inference
+        logger.info(f"Starting inference with conf={conf}, iou={iou}, max_det={max_det}, classes={classes_list}")
         results = model.predict(source=frame,
                                 conf=conf,
                                 iou=iou,
                                 max_det=max_det,
-                                classes=classes_list)
+                                classes=classes_list,
+                                )
 
         # Process results list
         detections = []
@@ -98,20 +134,24 @@ async def detect_objects(
                                                       mask=mask,
                                                       ))
 
+        logger.info(f"Detection completed with {len(detections)} objects detected.")
         return JSONResponse(content=[detection.dict() for detection in detections])
     except Exception as e:
+        logger.error(f"Error during detection: {str(e)}")
         traceback.print_exc()
         return JSONResponse(status_code=500, content={"message": str(e)})
     
 # Nova rota para verificar qual GPU está sendo usada
 @app.get("/device-info")
 async def device_info():
+    logger.info("Device info requested")
     return get_device_info()
 
 # Nova rota para consultar as classes disponíveis no modelo
 @app.get("/model_classes")
 async def get_classes():
+    logger.info("Classes info requested")
     return JSONResponse(content={"model_classes": classes_name})
 
 if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run(app, host="0.0.0.0", port=8000, log_config=None, access_log=False)

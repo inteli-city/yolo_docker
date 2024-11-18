@@ -7,3 +7,5 @@ Requisitos Inferencia via API:
 - consulta para saber se o app está com suporte a GPU ou CPU ✅
 
 - consulta das classes que o modelo carregado possui ✅
+
+- montar um volume na rede para acessar as imagens do data lake 
