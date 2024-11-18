@@ -13,7 +13,7 @@ image_paths = [
 for file_path in image_paths:
     with open(file_path, "rb") as image_file:
         files = {"image": image_file}
-        response = requests.post(url + "detect", files=files)
+        response = requests.post(url + "detect?conf=0.5&iou=0.4&max_det=10&classes=0,1,2,7", files=files)
         print(f"Response for {file_path}: {response.json()}")
 
 # Requisição GET para o endpoint /device-info
