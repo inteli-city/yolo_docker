@@ -1,9 +1,10 @@
 import os
 import cv2
 import torch
-import colorsys
-import numpy as np
 import uvicorn
+import colorsys
+import traceback
+import numpy as np
 from ultralytics import YOLO
 
 from fastapi import FastAPI, UploadFile, File
@@ -48,10 +49,11 @@ def get_device_info():
 class DetectionResult(BaseModel):
     label: str
     confidence: float
-    x: int
-    y: int
-    width: int
-    height: int
+    x: float
+    y: float
+    width: float
+    height: float
+    mask: list
 
 @app.post("/detect")
 async def detect_objects(image: UploadFile = File(...)):
@@ -81,16 +83,27 @@ async def detect_objects(image: UploadFile = File(...)):
 
             if len(boxes) > 0:
                 # Draw bounding boxes when there is a detection
-                for box, cls, conf, mask in zip(boxes.xyxy, boxes.cls, boxes.conf, masks.xy):  # Iterate over each detection
+                for box, cls, conf, mask in zip(boxes.xyxyn, boxes.cls, boxes.conf, masks.xyn):  # Iterate over each detection
                     bbox = box[0:4]  # Bounding box coordinates [x_min, y_min, x_max, y_max]
-                    bbox = [int(coord) for coord in bbox]  # Convert coordinates to integers
+                    #bbox = [int(coord) for coord in bbox]  # Convert coordinates to integers
                     cls = int(cls.item())  # Extract data from tensor
                     label = classes_name[cls]  # Class label
                     labels = f"Label: {cls} {label}, Conf: {conf:.2f} x{bbox[0]} y{bbox[1]} w{bbox[2]-bbox[0]} h{bbox[3]-bbox[1]}"
-                    detections.append(DetectionResult(label=label, confidence=conf, x=bbox[0]/image_shape[0], y=bbox[1]/image_shape[1], width=(bbox[2]-bbox[0])/image_shape[0], height=(bbox[3]-bbox[1]/image_shape[1])))
+                    print(type(mask))
+                    print(mask)
+                    mask = mask.tolist()
+                    detections.append(DetectionResult(label=label,
+                                                      confidence=conf,
+                                                      x=bbox[0],
+                                                      y=bbox[1],
+                                                      width=(bbox[2] - bbox[0]),
+                                                      height=(bbox[3] - bbox[1]),
+                                                      mask=mask,
+                                                      ))
 
         return JSONResponse(content=[detection.dict() for detection in detections])
     except Exception as e:
+        traceback.print_exc()
         return JSONResponse(status_code=500, content={"message": str(e)})
     
 # Nova rota para verificar qual GPU está sendo usada
