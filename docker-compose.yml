@@ -1,4 +1,4 @@
-version: '3.8'
+#version: '3.8'
 
 services:
   yolo-fastapi:
@@ -11,7 +11,7 @@ services:
     volumes:
       - ./data:/app/data
     environment:
-      - MODEL_WEIGHTS=/app/yolo11x-seg.pt  # Specify path to the YOLO weights file
+      - MODEL_WEIGHTS=/app/yolo11n-seg.pt  # Specify path to the YOLO weights file
       #- MODEL_WEIGHTS=/app/best.pt  # Specify path to the YOLO weights file
     runtime: nvidia  # Para especificar o uso do runtime NVIDIA
     restart: unless-stopped
