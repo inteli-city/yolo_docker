@@ -48,11 +48,13 @@ def get_device_info():
 
 class DetectionResult(BaseModel):
     label: str
+    id: int
     confidence: float
     x: float
     y: float
     width: float
     height: float
+    image_shape: list
     mask: list
 
 @app.post("/detect")
@@ -89,15 +91,15 @@ async def detect_objects(image: UploadFile = File(...)):
                     cls = int(cls.item())  # Extract data from tensor
                     label = classes_name[cls]  # Class label
                     labels = f"Label: {cls} {label}, Conf: {conf:.2f} x{bbox[0]} y{bbox[1]} w{bbox[2]-bbox[0]} h{bbox[3]-bbox[1]}"
-                    print(type(mask))
-                    print(mask)
                     mask = mask.tolist()
                     detections.append(DetectionResult(label=label,
+                                                      id=cls,
                                                       confidence=conf,
                                                       x=bbox[0],
                                                       y=bbox[1],
                                                       width=(bbox[2] - bbox[0]),
                                                       height=(bbox[3] - bbox[1]),
+                                                      image_shape=(image_shape[1],image_shape[0]),
                                                       mask=mask,
                                                       ))
 
