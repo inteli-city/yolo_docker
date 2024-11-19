@@ -1,6 +1,5 @@
 import os
 import cv2
-import pytz
 import torch
 import uvicorn
 import logging
@@ -8,10 +7,11 @@ import traceback
 import numpy as np
 from ultralytics import YOLO
 from datetime import datetime
+import pytz
 from logging.handlers import RotatingFileHandler
 import warnings
 
-from fastapi import FastAPI, UploadFile, File, Query
+from fastapi import FastAPI, Query
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
@@ -81,18 +81,26 @@ class DetectionResult(BaseModel):
 
 @app.post("/detect")
 async def detect_objects(
-    image: UploadFile = File(...),
-    conf: float  = Query(0.5,  description="Confidence threshold for predictions"),
-    iou: float   = Query(0.4,  description="Intersection over Union (IoU) threshold for NMS"),
-    max_det: int = Query(100,  description="Maximum number of detections per image"),
-    classes: str = Query(None, description="Optional filter by class, i.e. '0,1,2' for specific classes")
+    # To Read image file
+    #image: UploadFile = File(...),
+    image_path: str = Query(...,  description="Path to the image for prediction"),
+    conf: float     = Query(0.5,  description="Confidence threshold for predictions"),
+    iou: float      = Query(0.4,  description="Intersection over Union (IoU) threshold for NMS"),
+    max_det: int    = Query(100,  description="Maximum number of detections per image"),
+    classes: str    = Query(None, description="Optional filter by class, i.e. '0,1,2' for specific classes")
 ):
     try:
         # Read image file
-        logger.info("Received image for detection")
-        contents = await image.read()
-        np_arr = np.frombuffer(contents, np.uint8)
-        frame = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
+        #logger.info("Received image for detection")
+        #contents = await image.read()
+        #np_arr = np.frombuffer(contents, np.uint8)
+        #frame = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
+
+        # Read image file from path
+        logger.info("Received image path for detection")
+        frame = cv2.imread(image_path)
+        if frame is None:
+            raise FileNotFoundError(f"Image at path {image_path} could not be found or read.")
         image_shape = frame.shape
 
         # Convert classes string to list of integers if provided
@@ -104,8 +112,7 @@ async def detect_objects(
                                 conf=conf,
                                 iou=iou,
                                 max_det=max_det,
-                                classes=classes_list,
-                                )
+                                classes=classes_list)
 
         # Process results list
         detections = []
