@@ -1,7 +1,7 @@
 import requests
 
 url = "http://localhost:8000/"
-"""
+
 
 # Lista de caminhos para as imagens, enviando somante p path string
 # Lista de caminhos para as imagens, enviando imagens
@@ -15,7 +15,7 @@ image_paths = [
 for file_path in image_paths:
     with open(file_path, "rb") as image_file:
         files = {"image": image_file}
-        response = requests.post(url + "/detect?conf=0.5&iou=0.4&max_det=10&classes=7'", files=files)
+        response = requests.post(url + "/detect_image?conf=0.5&iou=0.4&max_det=10&classes=0,1,2,3,4,7", files=files)
         print(f"Response for {file_path}: {response.json()}")
 
 # Requisição GET para o endpoint /device-info
@@ -24,7 +24,7 @@ print(device_info_response)
 
 
 """
-
+"""
 image_paths = [
     "./images_10219.jpg",
     "./images_3716.jpg",
@@ -43,7 +43,7 @@ for image_path in image_paths:
         "max_det": 10,
         "classes": "0,1,2,7" # ou "" para não filtrar
     }
-    response = requests.post(url + "detect", params=params)
+    response = requests.post(url + "detect_image_path", params=params)
     print(f"Response for {image_path}: {response.json()}")
 
 # Requisição GET para o endpoint /device-info

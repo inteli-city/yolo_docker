@@ -11,7 +11,7 @@ import pytz
 from logging.handlers import RotatingFileHandler
 import warnings
 
-from fastapi import FastAPI, Query
+from fastapi import FastAPI, Query, UploadFile, File
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
@@ -79,10 +79,8 @@ class DetectionResult(BaseModel):
     image_shape: list
     mask: list
 
-@app.post("/detect")
-async def detect_objects(
-    # To Read image file
-    #image: UploadFile = File(...),
+@app.post("/detect_image_path")
+async def detect_objects_from_path(
     image_path: str = Query(...,  description="Path to the image for prediction"),
     conf: float     = Query(0.5,  description="Confidence threshold for predictions"),
     iou: float      = Query(0.4,  description="Intersection over Union (IoU) threshold for NMS"),
@@ -90,17 +88,44 @@ async def detect_objects(
     classes: str    = Query(None, description="Optional filter by class, i.e. '0,1,2' for specific classes")
 ):
     try:
-        # Read image file
-        #logger.info("Received image for detection")
-        #contents = await image.read()
-        #np_arr = np.frombuffer(contents, np.uint8)
-        #frame = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
-
-        # Read image file from path
         logger.info("Received image path for detection")
         frame = cv2.imread(image_path)
         if frame is None:
             raise FileNotFoundError(f"Image at path {image_path} could not be found or read.")
+        return await inference(frame, conf, iou, max_det, classes)
+    except Exception as e:
+        logger.error(f"Error during detection: {str(e)}")
+        traceback.print_exc()
+        return JSONResponse(status_code=500, content={"message": str(e)})
+
+@app.post("/detect_image")
+async def detect_objects_from_upload(
+    image: UploadFile = File(...),
+    conf: float     = Query(0.5,  description="Confidence threshold for predictions"),
+    iou: float      = Query(0.4,  description="Intersection over Union (IoU) threshold for NMS"),
+    max_det: int    = Query(100,  description="Maximum number of detections per image"),
+    classes: str    = Query(None, description="Optional filter by class, i.e. '0,1,2' for specific classes")
+):
+    try:
+        logger.info("Received image for detection")
+        contents = await image.read()
+        np_arr = np.frombuffer(contents, np.uint8)
+        frame = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
+        if frame is None:
+            raise ValueError("Uploaded image could not be read. It may be corrupted or in an unsupported format.")
+        return await inference(frame, conf, iou, max_det, classes)
+    except Exception as e:
+        logger.error(f"Error during detection: {str(e)}")
+        traceback.print_exc()
+        return JSONResponse(status_code=500, content={"message": str(e)})
+
+async def inference(frame,
+                    conf: float,
+                    iou: float,
+                    max_det: int,
+                    classes: str,
+                    ):
+    try:
         image_shape = frame.shape
 
         # Convert classes string to list of integers if provided
@@ -137,17 +162,17 @@ async def detect_objects(
                                                       y=bbox[1],
                                                       width=(bbox[2] - bbox[0]),
                                                       height=(bbox[3] - bbox[1]),
-                                                      image_shape=(image_shape[1],image_shape[0]),
+                                                      image_shape=(image_shape[1], image_shape[0]),
                                                       mask=mask,
                                                       ))
 
         logger.info(f"Detection completed with {len(detections)} objects detected.")
         return JSONResponse(content=[detection.dict() for detection in detections])
     except Exception as e:
-        logger.error(f"Error during detection: {str(e)}")
+        logger.error(f"Error during inference: {str(e)}")
         traceback.print_exc()
         return JSONResponse(status_code=500, content={"message": str(e)})
-    
+
 # Nova rota para verificar qual GPU está sendo usada
 @app.get("/device-info")
 async def device_info():
