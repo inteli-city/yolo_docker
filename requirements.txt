@@ -1,8 +1,8 @@
-#torch
-#torchvision
+torch
+torchvision
 fastapi
 uvicorn
 pydantic
-#ultralytics
+ultralytics
 python-multipart
 opencv-python-headless

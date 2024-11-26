@@ -6,9 +6,10 @@ url = "http://localhost:8000/"
 # Lista de caminhos para as imagens, enviando somante p path string
 # Lista de caminhos para as imagens, enviando imagens
 image_paths = [
-    "/home/mansur/Documents/Geovista/yolo_docker/images_10219.jpg",
-    "/home/mansur/Documents/Geovista/yolo_docker/images_3716.jpg",
-    "/home/mansur/Documents/Geovista/yolo_docker/images_36991.jpg"
+    #"/home/mansur/Documents/Geovista/yolo_docker/images_10219.jpg",
+    #"/home/mansur/Documents/Geovista/yolo_docker/images_3716.jpg",
+    #"/home/mansur/Documents/Geovista/yolo_docker/images_36991.jpg",
+    "/workspace/production/docker/AirFlow/volume/data/out/2024/06/JETSON_000108_cam0-20240605-14h28m24s.jpg"
 ]
 
 # Loop para enviar cada imagem para a API
@@ -32,6 +33,7 @@ image_paths = [
     "/datalake/images_5962.jpg",
     "/datalake/images_1332.jpg",
     "./I1_000158.png",
+    "/datalake/out/2024/06/JETSON_000108_cam0-20240605-14h28m24s.jpg"
 ]
 
 # Loop para enviar cada imagem para a API

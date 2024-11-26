@@ -11,7 +11,7 @@ services:
     volumes:
       - ./data:/app/data
       #path para datalake
-      - /home/mansur/Documents/Geovista/stereo_vision/stereo_camera/data/videos/antigos/L_2023-10-09_14-21-38:/datalake  # Volume para o data-lake de imagens
+      - /workspace/production/docker/AirFlow/volume/data:/datalake  # Volume para o data-lake de imagens
     environment:
       - MODEL_WEIGHTS=/app/yolo11n-seg.pt  # Specify path to the YOLO weights file
       #- MODEL_WEIGHTS=/app/best.pt  # Specify path to the YOLO weights file
