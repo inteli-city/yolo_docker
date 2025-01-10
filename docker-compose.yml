@@ -7,13 +7,13 @@ services:
       context: .
       dockerfile: Dockerfile
     ports:
-      - "8000:8000"
+      - "8001:8000"
     volumes:
       - ./data:/app/data
       #path para datalake
       - /workspace/production/docker/AirFlow/volume/data/datalake/:/datalake  # Volume para o data-lake de imagens
     environment:
-      - MODEL_WEIGHTS=/app/yolo11n-seg.pt  # Specify path to the YOLO weights file
-      #- MODEL_WEIGHTS=/app/best.pt  # Specify path to the YOLO weights file
+      #- MODEL_WEIGHTS=/app/yolo11x-seg.pt  # Specify path to the YOLO weights file
+      - MODEL_WEIGHTS=/app/best.pt  # Specify path to the YOLO weights file
     runtime: nvidia  # Para especificar o uso do runtime NVIDIA
-    restart: unless-stopped
+    restart: unless-stopped   
