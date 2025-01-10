@@ -148,23 +148,45 @@ async def inference(frame,
             keypoints = result.keypoints  # Keypoints object for pose outputs
 
             if len(boxes) > 0:
-                # Draw bounding boxes when there is a detection
-                for box, cls, conf, mask in zip(boxes.xyxyn, boxes.cls, boxes.conf, masks.xyn):  # Iterate over each detection
-                    bbox = box[0:4]  # Bounding box coordinates [x_min, y_min, x_max, y_max]
-                    cls = int(cls.item())  # Extract data from tensor
-                    label = classes_name[cls]  # Class label
-                    labels = f"Label: {cls} {label}, Conf: {conf:.2f} x{bbox[0]} y{bbox[1]} w{bbox[2]-bbox[0]} h{bbox[3]-bbox[1]}"
-                    mask = mask.tolist()
-                    detections.append(DetectionResult(label=label,
-                                                      id=cls,
-                                                      confidence=conf,
-                                                      x=bbox[0],
-                                                      y=bbox[1],
-                                                      width=(bbox[2] - bbox[0]),
-                                                      height=(bbox[3] - bbox[1]),
-                                                      image_shape=(image_shape[1], image_shape[0]),
-                                                      mask=mask,
-                                                      ))
+                
+                if masks is not None and hasattr(masks, 'xyn') and masks.xyn is not None:
+                    # Processa as detecções com máscaras
+                    for box, cls, conf, mask in zip(boxes.xyxyn, boxes.cls, boxes.conf, masks.xyn):
+                        bbox = box[0:4]  # Bounding box coordinates [x_min, y_min, x_max, y_max]
+                        cls = int(cls.item())  # Extract data from tensor
+                        label = classes_name[cls]  # Class label
+                        labels = f"Label: {cls} {label}, Conf: {conf:.2f} x{bbox[0]} y{bbox[1]} w{bbox[2]-bbox[0]} h{bbox[3]-bbox[1]}"
+                        mask = mask.tolist()
+                        detections.append(DetectionResult(
+                            label=label,
+                            id=cls,
+                            confidence=conf,
+                            x=bbox[0],
+                            y=bbox[1],
+                            width=(bbox[2] - bbox[0]),
+                            height=(bbox[3] - bbox[1]),
+                            image_shape=(image_shape[1], image_shape[0]),
+                            mask=mask,
+                        ))
+                else:
+                    # Processa as detecções sem máscaras
+                    for box, cls, conf in zip(boxes.xyxyn, boxes.cls, boxes.conf):
+                        bbox = box[0:4]  # Bounding box coordinates [x_min, y_min, x_max, y_max]
+                        cls = int(cls.item())  # Extract data from tensor
+                        label = classes_name[cls]  # Class label
+                        labels = f"Label: {cls} {label}, Conf: {conf:.2f} x{bbox[0]} y{bbox[1]} w{bbox[2]-bbox[0]} h{bbox[3]-bbox[1]}"
+                        mask = []
+                        detections.append(DetectionResult(
+                            label=label,
+                            id=cls,
+                            confidence=conf,
+                            x=bbox[0],
+                            y=bbox[1],
+                            width=(bbox[2] - bbox[0]),
+                            height=(bbox[3] - bbox[1]),
+                            image_shape=(image_shape[1], image_shape[0]),
+                            mask=mask,
+                        ))
 
         logger.info(f"Detection completed with {len(detections)} objects detected.")
         return JSONResponse(content=[detection.dict() for detection in detections])
